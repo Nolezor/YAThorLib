@@ -3,7 +3,7 @@
 Read-only by default. Anything that energizes or moves the stage needs an explicit flag:
   python tools/hw_check.py /dev/ttyUSB0 KDC101 --kind dc
   python tools/hw_check.py /dev/ttyUSB0 KDC101 --kind dc --enable --home
-  python tools/hw_check.py /dev/ttyUSB0 KDC101 --kind dc --enable --move-relative 2000
+  python tools/hw_check.py /dev/ttyUSB0 KDC101 --kind dc --enable --move-relative 34555   # about 1 mm on an MTS-Z8 stage
 Model is the CONTROLLER (check hardware_info), not the stage name. Positions are device units.
 """
 import argparse

@@ -129,6 +129,12 @@ class UnitScale:
     acceleration: float
     reported_velocity: float | None = None
 
+    @classmethod
+    def for_dc_servo(cls, counts_per_unit: float) -> UnitScale:
+        """KDC101/TDC001 scale from encoder counts per mm (or degree); formulas from the protocol PDF p.42."""
+        t = 2048 / 6e6
+        return cls(counts_per_unit, counts_per_unit * t * 65536, counts_per_unit * t * t * 65536)
+
     def __post_init__(self):
         for value in (self.position, self.velocity, self.acceleration, self.reported_velocity):
             if value is not None and (not math.isfinite(value) or value <= 0):

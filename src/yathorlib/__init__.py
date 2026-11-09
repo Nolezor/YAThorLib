@@ -4,6 +4,7 @@ from .codecs import HardwareInfo, Layout, MotorStatus, MotorStatusBits, UnitScal
 from .connection import Connection, ConnectionClosed, DeviceError, EventOverflow, StreamTransport, Transport
 from .devices import Device, InertialMotor, Laser, LiquidCrystal, MotionInterrupted, Motor, NanoTrak, Piezo, PiezoStage, PositionReadoutEncoder, QuadDetector, Rack, Solenoid, StrainGauge, TemperatureController, UnsupportedCommand, device
 from .discovery import Port, discover
+from .stages import STAGES, stage_scale
 from .protocol import FrameDecoder, Message, ProtocolError, bay_address
 
 __version__ = "0.1.0"
