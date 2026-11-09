@@ -1,0 +1,94 @@
+{
+  "authority": "shipped-artifact static analysis; hardware unverified",
+  "sources": {
+    "klc": {
+      "artifact": "Thorlabs.MotionControl.KCube.LiquidCrystal.dll",
+      "request_functions": [
+        "0x18001caf0",
+        "0x18001cb20",
+        "0x18001ca10"
+      ],
+      "response_dispatch": "0x180020c30",
+      "voltage_response": "0x18001f1e0",
+      "frequency_response": "0x18001f040",
+      "preset_writer": "0x18001eda0",
+      "evidence": "docs/research/decompile-klc-impl-manifest.json",
+      "sha256": "204d78a60d70b86674e8b77102647b30afe411db17e46124f46e0a52baecff7a"
+    },
+    "encoder": {
+      "artifact": "Thorlabs.MotionControl.PositionReadoutEncoder.dll",
+      "request": "0x180018200",
+      "zero": "0x180018090",
+      "response_dispatch": "0x18001b030",
+      "default_channel_initializer": "0x18001a5b0",
+      "shared_request_serializer": "DeviceManager.dll:0x18006dbb0",
+      "evidence": "docs/research/decompile-encoder-impl-manifest.json",
+      "sha256": "ff1c4a99e2666ae356737fd258e0da5f60f2c76ad9a088d28e85f1ba17d81712"
+    }
+  },
+  "messages": {
+    "KLC_SET_OUTPUTVOLTS": {
+      "id": 8193,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "KLC_REQ_OUTPUTVOLTS": {
+      "id": 8194,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "KLC_GET_OUTPUTVOLTS": {
+      "id": 8195,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "KLC_SET_OUTPUTFREQ": {
+      "id": 8197,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "KLC_REQ_OUTPUTFREQ": {
+      "id": 8198,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "KLC_GET_OUTPUTFREQ": {
+      "id": 8199,
+      "page": null,
+      "basis": "rea-native-klc"
+    },
+    "ENC_SET_ZERO": {
+      "id": 928,
+      "page": null,
+      "basis": "rea-native-encoder"
+    },
+    "ENC_REQ_POSITION": {
+      "id": 929,
+      "page": null,
+      "basis": "rea-native-encoder"
+    },
+    "ENC_GET_POSITION": {
+      "id": 930,
+      "page": null,
+      "basis": "rea-native-encoder"
+    }
+  },
+  "models": {
+    "KLC101": [
+      "HW_REQ_INFO",
+      "HW_GET_INFO",
+      "MOD_IDENTIFY",
+      "KLC_SET_OUTPUTVOLTS",
+      "KLC_REQ_OUTPUTVOLTS",
+      "KLC_GET_OUTPUTVOLTS",
+      "KLC_SET_OUTPUTFREQ",
+      "KLC_REQ_OUTPUTFREQ",
+      "KLC_GET_OUTPUTFREQ"
+    ],
+    "POSITIONREADOUTENCODER": [
+      "ENC_SET_ZERO",
+      "ENC_REQ_POSITION",
+      "ENC_GET_POSITION"
+    ]
+  }
+}

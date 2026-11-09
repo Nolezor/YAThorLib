@@ -1,0 +1,11 @@
+.venv*/
+.tools/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+docs/research/apt_protocol.txt
+docs/research/rea-evidence.json
+docs/research/decompiled/
+docs/research/decompiled-*/
