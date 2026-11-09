@@ -2,7 +2,7 @@
 
 Python 3.13+ asynchronous Thorlabs APT communications, implemented directly over Linux serial ports. The runtime uses neither Windows DLLs nor Kinesis, Wine, .NET or Ghidra.
 
-**Work in progress:** this is a protocol implementation with selected typed device APIs, not yet a complete replacement for Kinesis. Hardware compatibility has not been validated. The command catalog records documentation applicability; it does not certify a controller or firmware version. See [support coverage](docs/support.md) and [reverse engineering evidence](docs/reverse_engineering.md).
+**Work in progress:** this is a protocol implementation with selected typed device APIs, not yet a complete replacement for Kinesis. Hardware compatibility has not been validated. The command catalog records documentation applicability; it does not certify a controller or firmware version. See [support coverage](https://github.com/Nolezor/YAThorLib/blob/main/docs/support.md) and [reverse engineering evidence](https://github.com/Nolezor/YAThorLib/blob/main/docs/reverse_engineering.md).
 
 ## Install
 
@@ -32,7 +32,7 @@ Opening uses 115200 baud, 8N1, RTS/CTS, exclusive serial access and an initial b
 
 ## Device APIs
 
-`device(connection, model, channel=1, destination=0x50)` chooses a convenience class from documented capabilities. `Motor` supplies position, status, home, move_absolute, move_relative, jog and stop; `Piezo` supplies raw voltage/position and control mode. Other APIs cover selected inertial motor, NanoTrak, solenoid, strain gauge, detector, temperature, laser, liquid crystal and encoder operations. Their exact scope is in [support.md](docs/support.md).
+`device(connection, model, channel=1, destination=0x50)` chooses a convenience class from documented capabilities. `Motor` supplies position, status, home, move_absolute, move_relative, jog and stop; `Piezo` supplies raw voltage/position and control mode. Other APIs cover selected inertial motor, NanoTrak, solenoid, strain gauge, detector, temperature, laser, liquid crystal and encoder operations. Their exact scope is in [support.md](https://github.com/Nolezor/YAThorLib/blob/main/docs/support.md).
 
 Motion values are device units. Stage scaling is not inferred from a controller model. `UnitScale` accepts explicit, independently established conversion factors. Configure the stage, limits and homing parameters as required by its documentation before moving. In particular, a controller supporting a command does not prove it has the correct settings for the attached stage.
 
@@ -77,3 +77,9 @@ python -m build
 ```
 
 Tests include golden wire packets, fragmented reads, cancellation, error routing, unsolicited events, a TCP loopback and a Linux pseudo-terminal using the real serial transport. They do not substitute for physical-device tests. The local REA/Ghidra setup is used only to investigate supplied artifacts; see the research guide for reproduction.
+
+## License
+
+YAThorLib code is MIT licensed. Vendor software and reference materials in the research workspace remain separate third-party materials and are not included in the PyPI distributions.
+
+Release instructions: [publishing guide](https://github.com/Nolezor/YAThorLib/blob/main/docs/publishing.md).

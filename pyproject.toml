@@ -6,11 +6,31 @@ build-backend = "setuptools.build_meta"
 name = "yathorlib"
 version = "0.1.0"
 description = "Yet Another Thorlabs Library: Async native APT communications for Thorlabs controllers on Linux"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Nolezor"}]
+keywords = ["thorlabs", "apt", "asyncio", "motion-control", "linux"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+]
 requires-python = ">=3.13"
 dependencies = ["pyserial>=3.5", "pyserial-asyncio>=0.6"]
 
+[project.urls]
+Repository = "https://github.com/Nolezor/YAThorLib"
+Documentation = "https://github.com/Nolezor/YAThorLib/blob/main/README.md"
+Issues = "https://github.com/Nolezor/YAThorLib/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.24", "pypdf>=5", "build>=1"]
+release = ["build>=1", "twine>=6"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

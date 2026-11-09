@@ -1,0 +1,9 @@
+# Distribution allowlist: vendor binaries and research inputs are not shipped.
+global-exclude *
+include pyproject.toml README.md LICENSE MANIFEST.in
+recursive-include src/yathorlib *.py *.json py.typed
+recursive-include tests *.py
+recursive-include examples *.py
+include docs/support.md docs/reverse_engineering.md docs/publishing.md
+include tools/check_dist.py
+global-exclude *.pyc
