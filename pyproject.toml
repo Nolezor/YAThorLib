@@ -29,7 +29,7 @@ Documentation = "https://github.com/Nolezor/YAThorLib/blob/main/README.md"
 Issues = "https://github.com/Nolezor/YAThorLib/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "pypdf>=5", "build>=1"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "pypdf>=5", "build>=1", "ruff>=0.6", "mypy>=1.10"]
 release = ["build>=1", "twine>=6"]
 
 [tool.setuptools.packages.find]
@@ -43,3 +43,19 @@ pythonpath = ["src"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["REA Source", "docs/research"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"src/yathorlib/__init__.py" = ["F401"]  # public re-exports
+"tools/check_dist.py" = ["E731"]  # release script, left as is

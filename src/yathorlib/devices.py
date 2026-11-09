@@ -96,15 +96,9 @@ class Device:
             raise ValueError("acknowledgement interval must be between 0 and 1 second")
         if acknowledgement is not None:
             self.packet(acknowledgement)  # validate before starting updates
-        endpoint = self.destination, self.source
-        if endpoint in self.connection._update_endpoints:
-            raise RuntimeError("updates are already active for this endpoint")
-        self.connection._update_endpoints.add(endpoint)
-        try:
+        with self.connection.reserve_updates((self.destination, self.source)):
             async with self._updates(acknowledgement, interval, max_queue) as events:
                 yield events
-        finally:
-            self.connection._update_endpoints.discard(endpoint)
 
     @asynccontextmanager
     async def _updates(self, acknowledgement, interval, max_queue):
@@ -210,6 +204,8 @@ class ParameterDevice(Device):
         reply = await self.request(f"{self.family}_REQ_PARAMS", f"{self.family}_GET_PARAMS",
                                   param1=sub_id, param2=request_channel,
                                   predicate=lambda m: m.word() == sub_id)
+        if reply.data is None:
+            raise ProtocolError("expected a data packet; got a header-only reply")
         return reply.data[2:]
 
     async def set_subparameter(self, sub_id: int, body: bytes) -> None:

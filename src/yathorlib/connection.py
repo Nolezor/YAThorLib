@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from typing import Protocol
 
-from .protocol import FrameDecoder, Message, ProtocolError
+from .protocol import FrameDecoder, Message
 
 
 class ConnectionClosed(ConnectionError):
@@ -121,6 +121,17 @@ class Connection:
         """Raw APT byte-stream bridge, not a claim about Kinesis hub TCP framing."""
         reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout)
         return cls(StreamTransport(reader, writer), timeout=timeout).start()
+
+    @contextmanager
+    def reserve_updates(self, endpoint: tuple[int, int]):
+        """Claim an endpoint's update stream; two claims on one endpoint would fight over ACKs."""
+        if endpoint in self._update_endpoints:
+            raise RuntimeError("updates are already active for this endpoint")
+        self._update_endpoints.add(endpoint)
+        try:
+            yield
+        finally:
+            self._update_endpoints.discard(endpoint)
 
     def start(self) -> Connection:
         self._check()

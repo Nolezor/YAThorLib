@@ -80,6 +80,6 @@ Tests include golden wire packets, fragmented reads, cancellation, error routing
 
 ## License
 
-YAThorLib code is MIT licensed. Vendor software and reference materials in the research workspace remain separate third-party materials and are not included in the PyPI distributions.
+YAThorLib code is MIT licensed. Thorlabs software and reference materials used for the research (Kinesis DLLs, headers, drivers) are third-party, are not part of this repository (`REA Source/` is git-ignored) and are not included in the PyPI distributions. See [reverse engineering](https://github.com/Nolezor/YAThorLib/blob/main/docs/reverse_engineering.md) for how to obtain them.
 
 Release instructions: [publishing guide](https://github.com/Nolezor/YAThorLib/blob/main/docs/publishing.md).

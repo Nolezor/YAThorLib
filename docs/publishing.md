@@ -16,7 +16,7 @@ The release workflow `.github/workflows/publish.yml` publishes the wheel and sou
    | Environment | `pypi` |
 
 3. In `Nolezor/YAThorLib` → Settings → Environments, create `pypi`. Optional required reviewers can control release approval.
-4. Ensure the library source, metadata, README, LICENSE, MANIFEST.in, tests, `tools/check_dist.py`, documentation and workflows are on GitHub. The repository also tracks vendor binaries and research inputs; these are not needed for publishing and MANIFEST.in excludes them from the distributions. The MIT license applies to YAThorLib code, not third-party research inputs.
+4. Ensure the library source, metadata, README, LICENSE, MANIFEST.in, tests, `tools/check_dist.py`, documentation and workflows are on GitHub. Vendor binaries (`REA Source/`) are not tracked; keep them git-ignored. MANIFEST.in excludes research inputs from the distributions. The MIT license applies to YAThorLib code, not third-party research inputs.
 
 If the PyPI project already exists under your account, add the same publisher under that project's Publishing settings instead. A missing project page does not guarantee PyPI will accept the name.
 

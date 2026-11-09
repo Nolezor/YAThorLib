@@ -20,7 +20,9 @@ class Layout:
             raise ValueError(f"expected fields {self.fields}; got {tuple(values)}")
         return struct.pack("<" + self.format, *(values[name] for name in self.fields))
 
-    def unpack(self, data: bytes) -> dict:
+    def unpack(self, data: bytes | None) -> dict:
+        if data is None:
+            raise ProtocolError("expected a data packet; got a header-only reply")
         if len(data) != struct.calcsize("<" + self.format):
             raise ProtocolError(f"expected {struct.calcsize('<' + self.format)} payload bytes; got {len(data)}")
         return dict(zip(self.fields, struct.unpack("<" + self.format, data), strict=True))
@@ -69,8 +71,9 @@ class HardwareInfo:
         if message.message_id != 0x0006 or data is None or len(data) != 84:
             raise ProtocolError("HW_GET_INFO requires an 84-byte payload (pp. 59–60)")
         serial, model, kind = struct.unpack_from("<I8sH", data)
+        hw_version, modification, channels = struct.unpack_from("<HHH", data, 78)
         return cls(serial, model.split(b"\0", 1)[0].decode("ascii", "replace").strip(), kind,
-                   (data[16], data[15], data[14]), *struct.unpack_from("<HHH", data, 78), data[18:78])
+                   (data[16], data[15], data[14]), hw_version, modification, channels, data[18:78])
 
 
 class MotorStatusBits(IntFlag):

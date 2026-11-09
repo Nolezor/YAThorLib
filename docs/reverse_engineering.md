@@ -4,6 +4,8 @@ This repository uses the supplied APT protocol PDF and static REA analysis of th
 
 ## Inputs and inventory
 
+The vendor files (Kinesis DLLs, headers, XML, drivers) are **not in this repository**. To reproduce the research, install Thorlabs Kinesis on a Windows machine and copy its install folder (normally `C:\Program Files\Thorlabs\Kinesis`) to `REA Source/Thorlabs/` at the repository root; that path is git-ignored. Only the derived evidence under `docs/research/` and `src/yathorlib/data/` is committed. The runtime and the tests never need the vendor files.
+
 The PDF has 494 pages (issue 48). `tools/build_catalog.py` extracts named messages and applicability groups into `src/yathorlib/data/catalog.json`, retaining source pages, the input hash and conflicting observations. It does not infer binary field layouts. The current extraction contains 397 named identifiers and 45 applicability groups, with six recorded discrepancies. Body headings take precedence over incorrect table-of-contents IDs. The ambiguous KVC analog input request is excluded.
 
 `tools/inventory_kinesis.py` inventories 189 top-level DLL/header/XML files, with SHA-256 hashes in `research/inventory.json`. REA exported symbols from 48 DLLs (36,922 symbols); 46 headers were inventoried. An exported function inventory is not a complete decompilation. Managed metadata, including PrivateInternal, was inspected separately; its metadata does not establish the wire implementation of every public API.

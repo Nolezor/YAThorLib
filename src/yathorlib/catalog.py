@@ -10,7 +10,8 @@ from importlib.resources import files
 _DATA = json.loads(files("yathorlib").joinpath("data/catalog.json").read_text())
 _NATIVE = json.loads(files("yathorlib").joinpath("data/native.json").read_text())
 _MESSAGES = _DATA["messages"] | _NATIVE["messages"]
-MessageID = IntEnum("MessageID", {k: v["id"] for k, v in _MESSAGES.items()}, module=__name__)
+# members come from data at import time, which mypy cannot see
+MessageID = IntEnum("MessageID", {k: v["id"] for k, v in _MESSAGES.items()}, module=__name__)  # type: ignore[misc]
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ def commands_for(model: str) -> frozenset[str]:
     model = model.upper()
     if model in _NATIVE["models"]:
         return frozenset(_NATIVE["models"][model])
-    result = set()
+    result: set[str] = set()
     for heading, names in GROUPS.items():
         tokens = re.findall(r"\b[A-Z][A-Za-z]*[0-9][A-Za-z0-9]*\b|\bLTS\b|\bGNMx\b", heading)
         for token in tokens:
