@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `Elliptec`, `ElliptecBus`: untested-on-hardware support for Elliptec ELLx modules (ASCII protocol), from the ELLx manual and the vendor ELLO_DLL 1.6.0.0.
+
 ## 0.2.0 - 2026-11-10
 
 - First hardware validation: KDC101 with an MTS100/M-Z8 stage (details in `docs/validation.md`). Still alpha.

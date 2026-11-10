@@ -49,3 +49,25 @@ REA's ephemeral import leaves the source DLL unchanged. Ghidra and the vendor fi
 ## Remaining investigation
 
 Full Kinesis parity remains unfinished. Important gaps include model-specific stage settings and unit conversions, network hubs, joystick/TDI behavior, firmware operations, many MMI/trigger/configuration structures, liquid crystal operating-mode transitions, encoder display/calibration/status operations and all physical-device validation. Native exports were inventoried for all supplied DLLs, but native bodies were only investigated for selected transport and device paths. No claim of complete per-device support follows from the inventory.
+
+## Elliptec (ELLx)
+
+Evidence: `docs/ell_communications_protocol.pdf` (ELLx manual issue 12); vendor C# source in `REA Source/Elliptec/Source Code/ELLO_DLL` (assembly 1.6.0.0). REA `inspect_managed_artifact` on `Thorlabs.Elliptec.ELLO_DLL.dll` (SHA-256 `94e0ba4a931ac2b7a39d5453fa74611cb9e173813adff6a8fcc557efffa0ce4a`, evidence `ev_7b51bc6adfd4cf02c49f835f73a3f7a7aed7581439391c31110dab9337316a89`) confirmed assembly version 1.6.0.0, .NET 4.5.2. A scan of its UTF-16 string heap found every command literal used by the source (`in gs us ca i f b s c ho so go sj gj fw bw ms gp ma mr sk om cm st sz ga` and the reply tags `IN GS PO HO GJ`), so the source matches the binary at that level. No method bodies were decompiled. Nothing here was observed on a device.
+
+The library follows the manual unless the DLL shows a better reading:
+
+| Finding | Source |
+| --- | --- |
+| ASCII frames: address `0`-`F`, two-letter command, upper-case hex data; replies end CR LF | manual p.5-7, DLL `ELLDevicePort` |
+| Status code is hex (`GS0A` = 10); the manual table is decimal | DLL `DeviceStatus` (`ToInt(true)`) |
+| `I1`/`I2` reply is 25 characters (manual says 23) | DLL `MotorInfo` struct, manual example |
+| Period = 14,740,000 / Hz; the manual's `0f1804E` "78 kHz" example is really a period of 78, while the `I1` example `00BD` is 78 kHz | arithmetic, DLL `SetPeriod` |
+| Period bit 15 is set only for "hard save" in the DLL, always in the manual's examples; semantics unverified | DLL `SetPeriod`, manual p.15 |
+| Scale: rotary `pulses/360`; imperial `pulses x 25.4` per inch; otherwise `pulses` per mm; paddle `(pulses-1)/travel` (the manual table gives 2048 pulses/mm in prose but 1024 in the table) | DLL `DeviceID` |
+| ELL9/ELL12 sliders are moved with `ma` at index x 32 / x 19 although the manual says `ma` does not apply to sliders | DLL `ELLDevice.MoveToPosition` |
+| Vendor stops a held jog with undocumented `ms`; the manual documents `st` | DLL `JogStop` |
+| The DLL ends every command with BEL (`NewLine = "\a"`); the manual defines no terminator | DLL `ELLDevicePort` |
+| A move completes on `PO`; `GS09` is progress, other non-zero `GS` is failure | DLL `WaitForPositions` |
+| DLL group-home sends `ho` + `(int)direction` (`48`), probably a vendor bug | DLL `Home(List<char>)` |
+
+Not implemented: group addressing (`ga`), `is`, `ah`, `rd`, current-curve download, the paddle polariser commands (`pN aN rN tN`, nibble-packed positions), ELL6 shutters beyond `fw`/`bw`. Their bytes are in the DLL source and the manual; they use `bus.request()`.

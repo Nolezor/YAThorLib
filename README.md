@@ -47,6 +47,23 @@ Requests serialize on each connection because APT has no transaction identifiers
 
 Select the motor status layout explicitly (`await motor.status(kind='dc')` or `kind='stepper'`). A shared message identifier can have different payload layouts across controller families.
 
+## Elliptec (ELLx) modules
+
+Elliptec modules use a different, ASCII protocol (9600 8N1, no handshake) through an FTDI adapter. It is **not tested on hardware**; it follows the ELLx manual (issue 12) cross-checked with the vendor DLL, see [reverse engineering](https://github.com/Nolezor/YAThorLib/blob/main/docs/reverse_engineering.md#elliptec-ellx).
+
+```python
+from yathorlib import Elliptec, ElliptecBus
+
+async with await ElliptecBus.open_serial('/dev/ttyUSB0') as bus:
+    print(await bus.scan())            # IN reply of every responding address 0..F
+    stage = Elliptec(bus, '0')
+    info = await stage.identify()      # device-reported scale: info.pulses_per_unit, info.unit
+    await stage.home()
+    await stage.move_absolute(round(10 * info.pulses_per_unit))
+```
+
+Positions are device pulses. Requests serialize, and a timeout closes the bus, as for APT. Closing does not stop motion. `bus.request()` sends any other command.
+
 ## Raw messages and events
 
 ```python

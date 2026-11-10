@@ -3,6 +3,7 @@ from .catalog import COMMANDS, GROUPS, MessageID, command, commands_for
 from .codecs import HardwareInfo, Layout, MotorStatus, MotorStatusBits, UnitScale, decode_motor_status
 from .connection import Connection, ConnectionClosed, DeviceError, EventOverflow, StreamTransport, Transport
 from .devices import Device, InertialMotor, Laser, LiquidCrystal, MotionInterrupted, Motor, NanoTrak, Piezo, PiezoStage, PositionReadoutEncoder, QuadDetector, Rack, Solenoid, StrainGauge, TemperatureController, UnsupportedCommand, device
+from .elliptec import Elliptec, ElliptecBus, ElliptecError, ElliptecInfo
 from .discovery import Port, discover
 from .stages import STAGES, stage_scale
 from .protocol import FrameDecoder, Message, ProtocolError, bay_address
