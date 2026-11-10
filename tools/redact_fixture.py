@@ -13,17 +13,24 @@ HW_GET_INFO_HEADER = bytes.fromhex("060054008150")  # id 0x0006, 84-byte data pa
 
 def redact(path: Path) -> int:
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-    hits = 0
-    for row in rows:
-        raw = bytes.fromhex(row["hex"])
-        if row["dir"] == "rx" and raw.startswith(HW_GET_INFO_HEADER) and len(raw) >= 10:
-            if raw[6:10] != bytes(4):
-                hits += 1
-            row["hex"] = (raw[:6] + bytes(4) + raw[10:]).hex()
-            row["note"] = NOTE
-    # A reply may be split across reads with the header in a later chunk; flag it instead of missing it silently.
-    if not any(row.get("note") == NOTE for row in rows):
+    # Replies can arrive split across reads, so search the whole rx byte stream and map back to the chunks.
+    rx = [row for row in rows if row["dir"] == "rx"]
+    stream = bytearray(b"".join(bytes.fromhex(row["hex"]) for row in rx))
+    hits, found = 0, 0
+    i = stream.find(HW_GET_INFO_HEADER)
+    while i != -1 and i + 10 <= len(stream):
+        found += 1
+        hits += stream[i + 6:i + 10] != bytes(4)
+        stream[i + 6:i + 10] = bytes(4)
+        i = stream.find(HW_GET_INFO_HEADER, i + 10)
+    if not found:
         raise SystemExit(f"{path}: no HW_GET_INFO reply found; check by hand")
+    start = 0
+    for row in rx:
+        size = len(row["hex"]) // 2
+        row["hex"] = bytes(stream[start:start + size]).hex()
+        start += size
+    rx[0]["note"] = NOTE  # the zeroed bytes may sit in a later chunk, so mark the stream's first row
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
     return hits
 

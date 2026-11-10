@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from yathorlib import Connection, MotionInterrupted, device
+from yathorlib import Connection, ConnectionClosed, MotionInterrupted, device
 from yathorlib.codecs import MotorStatusBits, decode_motor_status
 
 FIXTURES = Path(__file__).parent / "fixtures/hardware/KDC101"
@@ -97,10 +97,62 @@ async def status_updates(motor):
         await motor.send("HW_STOP_UPDATEMSGS")
 
 
+async def listen_then_read(motor):
+    """hw_check --listen: nothing arrives unprompted from this unit (the capture starts 2 s before the first tx)."""
+    async with motor.connection.events() as events:
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.05):
+                await anext(events)
+    assert await identify(motor) == 94398
+
+
+async def listen_second_unit(motor):
+    """The unit that streamed updates in the status-updates capture is quiet now: that stream was left over."""
+    async with motor.connection.events() as events:
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.05):
+                await anext(events)
+    assert await identify(motor) == 1810268
+
+
+async def jog(motor):
+    assert await identify(motor) == 94398
+    await motor.enable(True)
+    assert await motor.is_enabled() is True
+    async with motor.connection.events(predicate=lambda m: m.message_id in (0x0464, 0x0466)) as done:
+        await motor.jog(1)  # direction 1 moved the stage towards LOWER counts on this unit (-17276 counts, ~0.5 mm)
+        assert (await anext(done)).message_id == 0x0464
+    assert await motor.position() == 77122
+
+
+async def stop_immediate(motor):
+    assert await identify(motor) == 77122
+    await motor.enable(True)
+    assert await motor.is_enabled() is True
+    move = asyncio.create_task(motor.move_absolute(138220, timeout=30))
+    await asyncio.sleep(0.01)
+    await motor.stop(immediate=True)  # stop mode 1; the controller answered after ~0.15 s (profiled stop: ~0.8 s)
+    with pytest.raises(MotionInterrupted):
+        await move
+    assert await motor.position() == 89750
+
+
+async def timeout_closes_connection(motor):
+    """A request to a bay that does not exist gets no reply; the library must then refuse further requests."""
+    assert await identify(motor) == 89750
+    ghost = device(motor.connection, "KDC101", destination=0x51)
+    with pytest.raises(TimeoutError):
+        await ghost.request("HW_REQ_INFO", "HW_GET_INFO", timeout=0.05)
+    with pytest.raises(ConnectionClosed):
+        await motor.position()
+
+
 @pytest.mark.parametrize("name, scenario", [
     ("readonly-mts100m-z8", read_only), ("home-mts100m-z8", home), ("move-relative-mts100m-z8", move_relative),
     ("move-absolute-mts100m-z8", move_absolute), ("stop-mid-move-mts100m-z8", stop_mid_move),
-    ("status-updates", status_updates)])
+    ("status-updates", status_updates), ("listen-then-readonly-mts100m-z8", listen_then_read),
+    ("listen-second-unit", listen_second_unit), ("jog-direction1-mts100m-z8", jog), ("stop-immediate-mts100m-z8", stop_immediate),
+    ("timeout-nonexistent-bay", timeout_closes_connection)])
 async def test_session_matches_real_device(name, scenario):
     lines = (FIXTURES / f"{name}.jsonl").read_text().splitlines()
     frames = [(r["dir"], bytes.fromhex(r["hex"])) for r in map(json.loads, lines)]
