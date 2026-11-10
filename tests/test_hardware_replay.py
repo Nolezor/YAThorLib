@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from yathorlib import Connection, device
+from yathorlib import Connection, MotionInterrupted, device
+from yathorlib.codecs import MotorStatusBits, decode_motor_status
 
 FIXTURES = Path(__file__).parent / "fixtures/hardware/KDC101"
 
@@ -63,8 +64,43 @@ async def move_relative(motor):
     assert await motor.position() == 34551  # 34553 counts moved: a 2-count (~58 nm) difference
 
 
+async def move_absolute(motor):
+    assert await identify(motor) == 34551
+    await motor.enable(True)
+    assert await motor.is_enabled() is True
+    assert (await motor.move_absolute(69110, timeout=30)).message_id == 0x0464  # MOVE_COMPLETED
+    assert await motor.position() == 69108  # 2 counts short of the target, as with the relative move
+
+
+async def stop_mid_move(motor):
+    assert await identify(motor) == 69108
+    await motor.enable(True)
+    assert await motor.is_enabled() is True
+    move = asyncio.create_task(motor.move_absolute(138220, timeout=30))
+    await asyncio.sleep(0.01)  # the stop must be written after the move command
+    await motor.stop()  # controlled stop, as in the capture
+    with pytest.raises(MotionInterrupted):
+        await move
+    assert await motor.position() == 94400  # stopped partway to 138220
+
+
+async def status_updates(motor):
+    """Raw HW_START_UPDATEMSGS stream with the ACK heartbeat; updates() itself is not replayed (it is timing based)."""
+    assert await identify(motor) == 1810268  # a different unit from the other captures
+    async with motor.connection.events(predicate=lambda m: m.message_id == 0x0491) as events:
+        await motor.send("HW_START_UPDATEMSGS")
+        for batch in (4, 5, 5, 5, 5, 5):  # updates arriving between consecutive ACKs in the capture
+            await motor.send("MOT_ACK_USTATUSUPDATE")
+            for _ in range(batch):
+                status = decode_motor_status(await anext(events), kind="dc")[0]
+                assert status.position == 1810268 and MotorStatusBits.HOMED in status.status
+        await motor.send("HW_STOP_UPDATEMSGS")
+
+
 @pytest.mark.parametrize("name, scenario", [
-    ("readonly-mts100m-z8", read_only), ("home-mts100m-z8", home), ("move-relative-mts100m-z8", move_relative)])
+    ("readonly-mts100m-z8", read_only), ("home-mts100m-z8", home), ("move-relative-mts100m-z8", move_relative),
+    ("move-absolute-mts100m-z8", move_absolute), ("stop-mid-move-mts100m-z8", stop_mid_move),
+    ("status-updates", status_updates)])
 async def test_session_matches_real_device(name, scenario):
     lines = (FIXTURES / f"{name}.jsonl").read_text().splitlines()
     frames = [(r["dir"], bytes.fromhex(r["hex"])) for r in map(json.loads, lines)]
