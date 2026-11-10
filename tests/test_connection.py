@@ -57,7 +57,7 @@ async def test_requests_are_serialized():
 async def test_timeout_closes_to_prevent_stale_reply_reuse():
     t = FakeTransport()
     c = Connection(t, timeout=0.01)
-    with pytest.raises(TimeoutError):
+    with pytest.raises(TimeoutError, match="no reply from 0x50 to message 0x0005"):
         await c.request(Message(5), 6)
     assert t.closed
     await t.reply()

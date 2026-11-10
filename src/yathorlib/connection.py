@@ -173,7 +173,11 @@ class Connection:
                 async with asyncio.timeout(delay):
                     await self.send(message)
                     return await future
-            except (TimeoutError, asyncio.CancelledError):
+            except TimeoutError as exc:
+                await self.close()
+                raise TimeoutError(f"no reply from 0x{message.destination:02x} to message 0x{message.message_id:04x} "
+                                   f"within {delay:g} s; connection closed. Check the port, power and address") from exc
+            except asyncio.CancelledError:
                 await self.close()
                 raise
             finally:
