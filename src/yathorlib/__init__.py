@@ -7,4 +7,4 @@ from .discovery import Port, discover
 from .stages import STAGES, stage_scale
 from .protocol import FrameDecoder, Message, ProtocolError, bay_address
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

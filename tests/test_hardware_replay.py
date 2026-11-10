@@ -115,6 +115,24 @@ async def listen_second_unit(motor):
     assert await identify(motor) == 1810268
 
 
+async def listen_after_power_cycle(motor):
+    """Second unit after a power cycle: quiet again, position counter back to 0 and not homed."""
+    async with motor.connection.events() as events:
+        with pytest.raises(TimeoutError):
+            async with asyncio.timeout(0.05):
+                await anext(events)
+    assert await identify(motor) == 0
+
+
+async def updates_context_manager(motor):
+    """Device.updates(): start, ACK heartbeat, stop. 28 updates arrive across six ACK intervals in the capture."""
+    assert await identify(motor) == 0
+    async with motor.updates(acknowledgement="MOT_ACK_USTATUSUPDATE", interval=0.1) as events:
+        for _ in range(28):  # the capture's sixth ACK is its last; leave before a seventh would be sent
+            status = decode_motor_status(await anext(events), kind="dc")[0]
+            assert status.position == 0 and MotorStatusBits.HOMED not in status.status
+
+
 async def jog(motor):
     assert await identify(motor) == 94398
     await motor.enable(True)
@@ -151,7 +169,8 @@ async def timeout_closes_connection(motor):
     ("readonly-mts100m-z8", read_only), ("home-mts100m-z8", home), ("move-relative-mts100m-z8", move_relative),
     ("move-absolute-mts100m-z8", move_absolute), ("stop-mid-move-mts100m-z8", stop_mid_move),
     ("status-updates", status_updates), ("listen-then-readonly-mts100m-z8", listen_then_read),
-    ("listen-second-unit", listen_second_unit), ("jog-direction1-mts100m-z8", jog), ("stop-immediate-mts100m-z8", stop_immediate),
+    ("listen-second-unit", listen_second_unit), ("listen-after-power-cycle", listen_after_power_cycle),
+    ("updates-context-manager", updates_context_manager), ("jog-direction1-mts100m-z8", jog), ("stop-immediate-mts100m-z8", stop_immediate),
     ("timeout-nonexistent-bay", timeout_closes_connection)])
 async def test_session_matches_real_device(name, scenario):
     lines = (FIXTURES / f"{name}.jsonl").read_text().splitlines()

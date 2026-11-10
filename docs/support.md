@@ -1,6 +1,6 @@
 # Support coverage
 
-Hardware evidence so far: KDC101 with an MTS100/M-Z8 stage, read, enable, home, relative and absolute moves, jog, controlled and immediate stop, timeout handling and raw status updates (see [validation.md](validation.md)); nothing else has been hardware-qualified. “Typed” below means selected payloads and operations have an implementation and synthetic tests, not full coverage of that device. Raw catalog availability means that a caller must supply and interpret the packet body. Firmware and stage configuration can affect applicability.
+Hardware evidence so far: KDC101 with an MTS100/M-Z8 stage, read, enable, home, relative and absolute moves, jog, controlled and immediate stop, timeout handling, raw status updates and `Device.updates()` (see [validation.md](validation.md)); nothing else has been hardware-qualified. “Typed” below means selected payloads and operations have an implementation and synthetic tests, not full coverage of that device. Raw catalog availability means that a caller must supply and interpret the packet body. Firmware and stage configuration can affect applicability.
 
 | API | Selected coverage | Remaining limitations |
 | --- | --- | --- |

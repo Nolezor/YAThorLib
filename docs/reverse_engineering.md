@@ -1,6 +1,6 @@
 # Reverse engineering record
 
-This repository uses the supplied APT protocol PDF and static REA analysis of the supplied Kinesis artifacts. No physical controller was available for validation. Recovered pseudocode is evidence about this Kinesis build, not original source or proof of compatibility with all firmware.
+This repository uses the supplied APT protocol PDF and static REA analysis of the supplied Kinesis artifacts. The research phase had no physical controller; the first hardware captures (KDC101 with an MTS100/M-Z8 stage) were added later and are described in `docs/validation.md`. Recovered pseudocode is evidence about this Kinesis build, not original source or proof of compatibility with all firmware.
 
 ## Inputs and inventory
 

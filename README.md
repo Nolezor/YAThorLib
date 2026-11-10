@@ -2,7 +2,7 @@
 
 Python 3.13+ asynchronous Thorlabs APT communications, implemented directly over Linux serial ports. The runtime uses neither Windows DLLs nor Kinesis, Wine, .NET or Ghidra.
 
-**Work in progress:** this is a protocol implementation with selected typed device APIs, not yet a complete replacement for Kinesis. Hardware compatibility has not been validated. The command catalog records documentation applicability; it does not certify a controller or firmware version. See [support coverage](https://github.com/Nolezor/YAThorLib/blob/main/docs/support.md) and [reverse engineering evidence](https://github.com/Nolezor/YAThorLib/blob/main/docs/reverse_engineering.md).
+**Work in progress:** this is a protocol implementation with selected typed device APIs, not yet a complete replacement for Kinesis. Hardware validation so far: two KDC101 units with an MTS100/M-Z8 stage (read, enable, home, moves, jog, stops, status updates, timeouts); no other model has been tested. Device error replies and a mid-move unplug are untested. The command catalog records documentation applicability; it does not certify a controller or firmware version. See [support coverage](https://github.com/Nolezor/YAThorLib/blob/main/docs/support.md) and [reverse engineering evidence](https://github.com/Nolezor/YAThorLib/blob/main/docs/reverse_engineering.md).
 
 ## Install
 

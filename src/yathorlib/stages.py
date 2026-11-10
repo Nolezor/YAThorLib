@@ -9,7 +9,7 @@ STAGES: dict[str, dict] = _DATA["stages"]
 
 
 # Thorlabs sells the MTS100/M-Z8 stage with a KDC101 as KMTS100E/M (manual 19593-D02 is shown on its page;
-# identity confirmed by the owner 2026-11-10; the physical mm per count has not been measured independently).
+# identity and the 34555 counts/mm scale confirmed by the owner with a physical distance measurement, 2026-11-10).
 ALIASES = {"KMTS100E/M": "MTS100/M-Z8"}
 
 
