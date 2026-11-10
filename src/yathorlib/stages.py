@@ -8,6 +8,11 @@ _DATA = json.loads(files("yathorlib").joinpath("data/stages.json").read_text())
 STAGES: dict[str, dict] = _DATA["stages"]
 
 
+# Thorlabs sells the MTS100/M-Z8 stage with a KDC101 as KMTS100E/M (manual 19593-D02 is shown on its page;
+# identity confirmed by the owner 2026-11-10; the physical mm per count has not been measured independently).
+ALIASES = {"KMTS100E/M": "MTS100/M-Z8"}
+
+
 def stage_scale(name: str) -> UnitScale:
     """Scale for a stage Kinesis lists for the KDC101/TDC001. Unknown names are rejected, never guessed.
 
@@ -15,6 +20,6 @@ def stage_scale(name: str) -> UnitScale:
     an encoder-fitted variant can differ from the plain stage with a similar name.
     """
     try:
-        return UnitScale.for_dc_servo(STAGES[name]["counts_per_unit"])
+        return UnitScale.for_dc_servo(STAGES[ALIASES.get(name, name)]["counts_per_unit"])
     except KeyError:
         raise KeyError(f"{name!r} is not in the Kinesis KDC101/TDC001 stage table") from None

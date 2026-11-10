@@ -16,9 +16,14 @@ def test_rotary_stage_matches_pdf():
     assert STAGES["PRM1-Z8"]["units"] == "deg"
 
 
+def test_kmts100em_is_the_mts100m_z8_stage():
+    assert stage_scale("KMTS100E/M") == stage_scale("MTS100/M-Z8")
+    assert stage_scale("KMTS100E/M").position == pytest.approx(34554.96)
+
+
 def test_unknown_stage_is_rejected():
     with pytest.raises(KeyError):
-        stage_scale("KMTS100E/M")
+        stage_scale("KMTS999")
 
 
 def test_for_dc_servo_rejects_bad_counts():
