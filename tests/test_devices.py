@@ -64,6 +64,13 @@ async def test_capability_rejection_before_any_write():
         assert t.tx.empty()
 
 
+async def test_stop_updates_sends_hw_stop_updatemsgs():
+    t = FakeTransport()
+    async with Connection(t) as c:
+        await device(c, "KDC101").stop_updates()
+        assert (await t.tx.get()).message_id == 0x12
+
+
 async def test_update_start_ack_stop():
     t = FakeTransport()
     async with Connection(t) as c:

@@ -55,6 +55,10 @@ class Device:
         return await self.connection.request(self.packet(name, **fields), response_ids,
                                              predicate=predicate, timeout=timeout)
 
+    async def stop_updates(self) -> None:
+        """Silence a status stream left running by an earlier session (HW_STOP_UPDATEMSGS)."""
+        await self.send("HW_STOP_UPDATEMSGS")
+
     async def identify(self) -> None:
         await self.send("MOD_IDENTIFY", param1=self.channel)
 
