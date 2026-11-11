@@ -223,6 +223,110 @@ class Laser(ParameterDevice):
         await self.send("LA_ENABLEOUTPUT" if enabled else "LA_DISABLEOUTPUT")
 
 
+class LaserSource(Laser):
+    """KLS635/KLS1550. Sub-message layouts from the APT PDF pp.327-355, checked against the
+    native KCube.LaserSource.dll (see docs/reverse_engineering.md). Hardware unverified.
+
+    Power and current are fractions of full scale (the device reports 0..32767 = 0..100 %).
+    The units of the raw limits words are not settled (PDF and header disagree); see `limits()`.
+    """
+    FULL_SCALE = 32767
+    CONTROL_SOURCES = {0: "software", 1: "external", 4: "wheel+software"}
+    TRIGGER_MODES = (0, 1, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F)
+
+    async def _body(self, sub_id: int, size: int) -> bytes:
+        body = await self.get_subparameter(sub_id)
+        if len(body) < size:
+            raise ProtocolError(f"laser sub-message {sub_id:#x}: expected {size} bytes, got {len(body)}")
+        return body
+
+    async def limits(self) -> dict:
+        """Raw words. `max_power_raw` is 0.0001 mW per the header but the PDF example reads 5 for 5 mW: check on the device."""
+        current, power, wavelength = struct.unpack_from("<HHH", await self._body(9, 6))
+        return {"max_current_raw": current, "max_power_raw": power, "wavelength_nm": wavelength}
+
+    async def setpoint(self) -> float:
+        """Power setpoint as a fraction of maximum power."""
+        return struct.unpack_from("<H", await self._body(1, 2))[0] / self.FULL_SCALE
+
+    async def set_setpoint(self, fraction: float) -> None:
+        if not 0 <= fraction <= 1:
+            raise ValueError("setpoint fraction must be in 0..1")
+        await self.set_subparameter(1, struct.pack("<H", round(fraction * self.FULL_SCALE)))
+
+    async def readings(self) -> dict:
+        """Actual current and power as fractions of full scale."""
+        current, power = struct.unpack_from("<HH", await self._body(3, 4))
+        return {"current": current / self.FULL_SCALE, "power": power / self.FULL_SCALE}
+
+    @staticmethod
+    def decode_status_bits(bits: int) -> dict:
+        return {"raw": bits, "output": bool(bits & 1), "keyswitch": bool(bits & 2),
+                "power_mode": bool(bits & 4), "interlock": bool(bits & 8)}
+
+    async def status_bits(self) -> dict:
+        return self.decode_status_bits(struct.unpack_from("<HI", await self._body(7, 6))[1])
+
+    async def status(self) -> dict:
+        """One LA_GET_STATUSUPDATE: readings plus status bits. Acknowledged so repeated polling cannot stall the unit."""
+        reply = await self.request("LA_REQ_STATUSUPDATE", "LA_GET_STATUSUPDATE")
+        if reply.data is None or len(reply.data) < 8:
+            raise ProtocolError("short laser status update")
+        current, power, bits = struct.unpack_from("<HHI", reply.data)
+        await self.send("LA_ACK_STATUSUPDATE")
+        return {"current": current / self.FULL_SCALE, "power": power / self.FULL_SCALE,
+                **self.decode_status_bits(bits)}
+
+    async def control_source(self) -> str:
+        value = struct.unpack_from("<H", await self._body(5, 2))[0]
+        return self.CONTROL_SOURCES.get(value, f"unknown({value})")
+
+    async def set_control_source(self, source: str) -> None:
+        by_name = {name: value for value, name in self.CONTROL_SOURCES.items()}
+        if source not in by_name:
+            raise ValueError(f"source must be one of {sorted(by_name)}")
+        await self.set_subparameter(5, struct.pack("<H", by_name[source]))
+
+    async def op_mode(self) -> str:
+        """Sub-message 0x12, found in the native DLL (not in the PDF); first word 0 constant power, 1 constant current."""
+        mode = struct.unpack_from("<H", await self._body(0x12, 10))[0]
+        return {0: "constant_power", 1: "constant_current"}.get(mode, f"unknown({mode})")
+
+    async def set_op_mode(self, mode: str) -> None:
+        values = {"constant_power": 0, "constant_current": 1}
+        if mode not in values:
+            raise ValueError(f"mode must be one of {sorted(values)}")
+        body = bytearray(await self._body(0x12, 10))  # keep the reserved words the unit reported
+        body[:2] = struct.pack("<H", values[mode])
+        await self.set_subparameter(0x12, bytes(body[:10]))
+
+    async def trigger_io(self) -> dict:
+        mode1, polarity1, _, mode2, polarity2, _ = struct.unpack_from("<6H", await self._body(0x10, 12))
+        return {"mode1": mode1, "polarity1": polarity1, "mode2": mode2, "polarity2": polarity2}
+
+    async def set_trigger_io(self, mode1: int, polarity1: int, mode2: int, polarity2: int) -> None:
+        """Modes: 0 off, 1 input, 0x0A output, 0x0B laser on, 0x0C interlock, 0x0D setpoint changed, 0x0E/0x0F stability.
+        Polarity 1 active high, 2 active low. Never drive the TRIG ports outside 0..5 V."""
+        if mode1 not in self.TRIGGER_MODES or mode2 not in self.TRIGGER_MODES:
+            raise ValueError("unknown trigger mode")
+        if polarity1 not in (1, 2) or polarity2 not in (1, 2):
+            raise ValueError("polarity must be 1 (high) or 2 (low)")
+        words = list(struct.unpack_from("<6H", await self._body(0x10, 12)))  # keep reserved words
+        words[0], words[1], words[3], words[4] = mode1, polarity1, mode2, polarity2
+        await self.set_subparameter(0x10, struct.pack("<6H", *words))
+
+    async def display_brightness(self) -> int:
+        """Percent. Sub-message 0x14 per the native DLL; the PDF says 0x0E (contradiction, unverified)."""
+        return struct.unpack_from("<H", await self._body(0x14, 8))[0]
+
+    async def set_display_brightness(self, percent: int) -> None:
+        if not 30 <= percent <= 100:  # Kinesis header says 30..100, the PDF says 20..100
+            raise ValueError("brightness must be 30..100 %")
+        body = bytearray(await self._body(0x14, 8))
+        body[:2] = struct.pack("<H", percent)
+        await self.set_subparameter(0x14, bytes(body[:8]))
+
+
 class LiquidCrystal(Device):
     """KLC101 preset access, reconstructed from native Kinesis; hardware unverified."""
 
@@ -404,7 +508,7 @@ def device(connection: Connection, model: str, **addressing) -> Device:
     elif "QUAD_SET_PARAMS" in commands:
         cls = QuadDetector
     elif "LA_SET_PARAMS" in commands:
-        cls = Laser
+        cls = LaserSource if model.upper() in ("KLS635", "KLS1550") else Laser
     elif "PZ_REQ_NTTIAREADING" in commands:
         cls = NanoTrak
     elif "MOT_SET_SOL_STATE" in commands:

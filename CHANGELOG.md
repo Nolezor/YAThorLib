@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `LaserSource` (KLS635/KLS1550): typed laser setpoint, readings, status bits, limits, control source, operating mode, trigger IO and display brightness, from the APT PDF plus native `KCube.LaserSource.dll` analysis. Not run on hardware. `tools/laser_check.py` for the first run (read-only by default).
 - `Elliptec`, `ElliptecBus`: untested-on-hardware support for Elliptec ELLx modules (ASCII protocol), from the ELLx manual and the vendor ELLO_DLL 1.6.0.0.
 
 ## 0.2.0 - 2026-11-10

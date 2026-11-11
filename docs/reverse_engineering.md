@@ -71,3 +71,20 @@ The library follows the manual unless the DLL shows a better reading:
 | DLL group-home sends `ho` + `(int)direction` (`48`), probably a vendor bug | DLL `Home(List<char>)` |
 
 Not implemented: group addressing (`ga`), `is`, `ah`, `rd`, current-curve download, the paddle polariser commands (`pN aN rN tN`, nibble-packed positions), ELL6 shutters beyond `fw`/`bw`. Their bytes are in the DLL source and the manual; they use `bus.request()`.
+
+## KLS635 / KLS1550 laser source
+
+Evidence: `docs/useful/etn039196-d03.pdf` (user guide, no wire protocol), APT PDF pp.327-356 (`LA_*` sub-messages), `Thorlabs.MotionControl.KCube.LaserSource.h`, and REA 6.8.0 + Ghidra 12.1.4 pseudocode of `Thorlabs.MotionControl.KCube.LaserSource.dll` (`docs/research/decompiled-kls/`, local only): the reply dispatcher `0x1800204a0` and the setters `0x18001fe30` (op mode), `0x180020080` (power), `0x18001ff60` (trigger IO), `0x18001faa0` (control source), `0x18001fd20` (MMI). Nothing here was observed on a device.
+
+| Finding | Source |
+| --- | --- |
+| Setters write `LA_SET_PARAMS` with the sub-ID as first data word: setpoint 1, control source 5, trigger IO 0x10 (14 data bytes), op mode 0x12 (12 data bytes), MMI 0x14 (10 data bytes) | setters above |
+| Op mode (0x12) is not in the PDF; first word is the mode (0 constant power, 1 constant current), four more words are kept as reported | `0x18001fe30`, `LS_GetOPMode` |
+| Display brightness is sub-ID 0x14 in the DLL; the PDF says 0x0E (and 0x0B, which it marks not applicable) | `0x18001fd20`, dispatcher `case 0x14` |
+| Replies decode: limits 9 = max current, max power, wavelength (words at offsets 8, 10, 12); readings 3 = current, power; status update 0x821 = current, power, status dword at 6, 8, 10; the DLL answers every 0x821 with 0x822 | dispatcher |
+| Setpoint, current and power are 0..32767 = 0..100 % of full scale | PDF, header |
+| Max power units are unresolved: the header says 0..6.5535 mW (0.0001 mW), the PDF example reads 5 for 5 mW, and the 8 mW rating does not fit 16 bits at 0.0001 mW. The library returns the raw word | header, PDF, datasheet |
+| Display brightness range: header 30..100, PDF 20..100; the library accepts 30..100 | header, PDF |
+| Status bits 0x1 output, 0x2 keyswitch, 0x4 power mode, 0x8 interlock agree with the PDF example `0x2B`; the PDF's ADC bit numbers are inconsistent, so the ext-input reading is not decoded | PDF |
+
+Not implemented: `HW_SET_KCUBEMMILOCK`, `RESTOREFACTORYSETTINGS`, the ext-input ADC field, mW/dBm conversion, the stability trigger modes beyond passing their numbers. The user guide documents the key switch and interlock: the output cannot be enabled without both.
