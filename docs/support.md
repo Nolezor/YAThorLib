@@ -11,7 +11,7 @@ Hardware evidence so far: KDC101 with an MTS100/M-Z8 stage, read, enable, home, 
 | Solenoid | State, operating mode and cycle parameters | Trigger and MMI configuration require raw access |
 | StrainGauge | Raw strain readings | Physical conversion depends on display mode/calibration |
 | NanoTrak | Readings, tracking mode/threshold, circle home and status | Remaining configuration requires raw access |
-| Laser | Output enable/disable, raw parameter envelope | No typed current/power conversions or limits, except KLS635/KLS1550 (`LaserSource`: setpoint, readings, status bits, limits, control source, op mode, trigger IO, display brightness; synthetic tests only, not run on hardware) |
+| Laser | Output enable/disable, raw parameter envelope | No typed current/power conversions or limits, except KLS635/KLS1550 (`LaserSource`: setpoint, readings, status bits, limits, control source, op mode, trigger IO, display brightness; run once on a KLS635, see validation.md; KLS1550 untested) |
 | TemperatureController | Raw setpoint and readings, parameter envelope | Sensor-dependent temperature conversion is not guessed |
 | QuadDetector | Detector readings, raw parameter envelope | Additional feedback/configuration requires raw access |
 | LiquidCrystal | KLC101 preset voltage/frequency read/write from native evidence | Experimental; operating mode and status not implemented |

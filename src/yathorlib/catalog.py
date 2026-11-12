@@ -42,6 +42,8 @@ def commands_for(model: str) -> frozenset[str]:
     Unknown models fail explicitly. Applicability is documentation, not hardware QA.
     """
     model = model.upper()
+    if model == "KLS101":  # what a KLS635 reports in HW_GET_INFO (seen on hardware); the PDF only knows KLS635/KLS1550
+        model = "KLS635"
     if model in _NATIVE["models"]:
         return frozenset(_NATIVE["models"][model])
     result: set[str] = set()

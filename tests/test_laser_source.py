@@ -18,7 +18,8 @@ async def exchange(t, call, reply_id, body):
 
 def test_factory_selects_typed_class_only_for_kls():
     c = Connection(FakeTransport())
-    assert isinstance(device(c, "KLS635"), LaserSource) and isinstance(device(c, "KLS1550"), LaserSource)
+    for model in ("KLS635", "KLS1550", "KLS101"):  # a KLS635 reports itself as KLS101
+        assert isinstance(device(c, model), LaserSource)
     assert not isinstance(device(c, "TLS001"), LaserSource)
 
 
@@ -38,8 +39,8 @@ async def test_limits_readings_and_status_bits():
     t = FakeTransport()
     async with Connection(t) as c:
         laser = device(c, "KLS1550")
-        _, limits = await exchange(t, laser.limits(), 0x802, struct.pack("<HHHH", 9, 200, 5, 1550))
-        assert limits == {"max_current_raw": 200, "max_power_raw": 5, "wavelength_nm": 1550}
+        _, limits = await exchange(t, laser.limits(), 0x802, struct.pack("<HHHH", 9, 200, 7000, 1550))
+        assert limits == {"max_current_raw": 200, "max_power_raw": 7000, "max_power_mw": 7.0, "wavelength_nm": 1550}
         _, read = await exchange(t, laser.readings(), 0x802, struct.pack("<HHH", 3, 0x1990, 0x0666))
         assert read["current"] == pytest.approx(0.2, abs=1e-3) and read["power"] == pytest.approx(0.05, abs=1e-3)
         _, bits = await exchange(t, laser.status_bits(), 0x802, struct.pack("<HHI", 7, 0, 0x2B))

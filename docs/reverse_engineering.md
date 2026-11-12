@@ -52,7 +52,7 @@ Full Kinesis parity remains unfinished. Important gaps include model-specific st
 
 ## Elliptec (ELLx)
 
-Evidence: `docs/ell_communications_protocol.pdf` (ELLx manual issue 12); vendor C# source in `REA Source/Elliptec/Source Code/ELLO_DLL` (assembly 1.6.0.0). REA `inspect_managed_artifact` on `Thorlabs.Elliptec.ELLO_DLL.dll` (SHA-256 `94e0ba4a931ac2b7a39d5453fa74611cb9e173813adff6a8fcc557efffa0ce4a`, evidence `ev_7b51bc6adfd4cf02c49f835f73a3f7a7aed7581439391c31110dab9337316a89`) confirmed assembly version 1.6.0.0, .NET 4.5.2. A scan of its UTF-16 string heap found every command literal used by the source (`in gs us ca i f b s c ho so go sj gj fw bw ms gp ma mr sk om cm st sz ga` and the reply tags `IN GS PO HO GJ`), so the source matches the binary at that level. No method bodies were decompiled. Nothing here was observed on a device.
+Evidence: `docs/ell_communications_protocol.pdf` (ELLx manual issue 12); vendor C# source in `REA Source/Elliptec/Source Code/ELLO_DLL` (assembly 1.6.0.0). REA `inspect_managed_artifact` on `Thorlabs.Elliptec.ELLO_DLL.dll` (SHA-256 `94e0ba4a931ac2b7a39d5453fa74611cb9e173813adff6a8fcc557efffa0ce4a`, evidence `ev_7b51bc6adfd4cf02c49f835f73a3f7a7aed7581439391c31110dab9337316a89`) confirmed assembly version 1.6.0.0, .NET 4.5.2. A scan of its UTF-16 string heap found every command literal used by the source (`in gs us ca i f b s c ho so go sj gj fw bw ms gp ma mr sk om cm st sz ga` and the reply tags `IN GS PO HO GJ`), so the source matches the binary at that level. No method bodies were decompiled. A first run on a KLS635 (firmware 1.1.2, 2026-11-11, `tests/fixtures/hardware/KLS/`) checked the rows marked *observed*.
 
 The library follows the manual unless the DLL shows a better reading:
 
@@ -83,8 +83,11 @@ Evidence: `docs/useful/etn039196-d03.pdf` (user guide, no wire protocol), APT PD
 | Display brightness is sub-ID 0x14 in the DLL; the PDF says 0x0E (and 0x0B, which it marks not applicable) | `0x18001fd20`, dispatcher `case 0x14` |
 | Replies decode: limits 9 = max current, max power, wavelength (words at offsets 8, 10, 12); readings 3 = current, power; status update 0x821 = current, power, status dword at 6, 8, 10; the DLL answers every 0x821 with 0x822 | dispatcher |
 | Setpoint, current and power are 0..32767 = 0..100 % of full scale | PDF, header |
-| Max power units are unresolved: the header says 0..6.5535 mW (0.0001 mW), the PDF example reads 5 for 5 mW, and the 8 mW rating does not fit 16 bits at 0.0001 mW. The library returns the raw word | header, PDF, datasheet |
+| Max power is in microwatts: *observed* 8000 on a KLS635, whose user guide rates it at 8.0 mW; the owner saw 8 mW at full setpoint on the unit. The header (0.0001 mW) and the PDF example (1 mW) are wrong. `limits()` adds `max_power_mw`; the max current word (9400) has no known unit | capture, user guide |
+| *Observed*: the unit answers sub-IDs 0x12 (op mode, 10 data bytes after the sub-ID, first word 0) and 0x14 (first word 30); 0x0E was not tried, so 0x14 is the working brightness ID. A KLS635 reports its model as `KLS101` (hardware type 21) | capture |
 | Display brightness range: header 30..100, PDF 20..100; the library accepts 30..100 | header, PDF |
-| Status bits 0x1 output, 0x2 keyswitch, 0x4 power mode, 0x8 interlock agree with the PDF example `0x2B`; the PDF's ADC bit numbers are inconsistent, so the ext-input reading is not decoded | PDF |
+| Status bits 0x1 output, 0x2 keyswitch, 0x4 power mode, 0x8 interlock agree with the PDF example `0x2B` (*observed* 0x8000022B: output, keyswitch, interlock, mW display 0x20, ADC bits); the PDF's ADC bit numbers are inconsistent, so the ext-input reading is not decoded | PDF |
+
+Observed and still open: status bit 0x4 ("1 = power, closed loop") was 0 while sub-ID 0x12 said constant power (0 in the header); the unit pushes an unsolicited `LA_GET_STATUSUPDATE` about every 1.2 s while the output is on; a write to the setpoint is not visible to a readback sent straight after it.
 
 Not implemented: `HW_SET_KCUBEMMILOCK`, `RESTOREFACTORYSETTINGS`, the ext-input ADC field, mW/dBm conversion, the stability trigger modes beyond passing their numbers. The user guide documents the key switch and interlock: the output cannot be enabled without both.

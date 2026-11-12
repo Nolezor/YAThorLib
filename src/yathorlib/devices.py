@@ -224,11 +224,13 @@ class Laser(ParameterDevice):
 
 
 class LaserSource(Laser):
-    """KLS635/KLS1550. Sub-message layouts from the APT PDF pp.327-355, checked against the
-    native KCube.LaserSource.dll (see docs/reverse_engineering.md). Hardware unverified.
+    """KLS635/KLS1550 (a KLS635 reports its model as KLS101). Sub-message layouts from the APT PDF pp.327-355
+    and the native KCube.LaserSource.dll (docs/reverse_engineering.md). Run once on a KLS635, firmware 1.1.2
+    (tests/fixtures/hardware/KLS/); the KLS1550 is untested.
 
-    Power and current are fractions of full scale (the device reports 0..32767 = 0..100 %).
-    The units of the raw limits words are not settled (PDF and header disagree); see `limits()`.
+    Power and current are fractions of full scale (the device reports 0..32767 = 0..100 %), as the PDF says;
+    the owner confirmed on 2026-11-12 that the setpoint runs 0..1 = 0..100 % of max power. The current word was not
+    compared with the display, so treat it as unverified.
     """
     FULL_SCALE = 32767
     CONTROL_SOURCES = {0: "software", 1: "external", 4: "wheel+software"}
@@ -241,15 +243,19 @@ class LaserSource(Laser):
         return body
 
     async def limits(self) -> dict:
-        """Raw words. `max_power_raw` is 0.0001 mW per the header but the PDF example reads 5 for 5 mW: check on the device."""
+        """`max_power_raw` is in microwatts: a KLS635 read 8000, matching its 8.0 mW rating (the Kinesis header's
+        0.0001 mW and the PDF's 1 mW are both wrong). `max_current_raw` (9400 on that unit) has no known unit."""
         current, power, wavelength = struct.unpack_from("<HHH", await self._body(9, 6))
-        return {"max_current_raw": current, "max_power_raw": power, "wavelength_nm": wavelength}
+        return {"max_current_raw": current, "max_power_raw": power, "max_power_mw": power / 1000,
+                "wavelength_nm": wavelength}
 
     async def setpoint(self) -> float:
         """Power setpoint as a fraction of maximum power."""
         return struct.unpack_from("<H", await self._body(1, 2))[0] / self.FULL_SCALE
 
     async def set_setpoint(self, fraction: float) -> None:
+        """Fire and forget. A readback sent straight after still returned the OLD value on a real unit (63 ms later),
+        so poll `setpoint()` until it changes if you need confirmation."""
         if not 0 <= fraction <= 1:
             raise ValueError("setpoint fraction must be in 0..1")
         await self.set_subparameter(1, struct.pack("<H", round(fraction * self.FULL_SCALE)))
@@ -261,6 +267,7 @@ class LaserSource(Laser):
 
     @staticmethod
     def decode_status_bits(bits: int) -> dict:
+        # power_mode (0x4, "1 = power, closed loop" in the PDF) read 0 on a KLS635 whose op_mode() was constant_power.
         return {"raw": bits, "output": bool(bits & 1), "keyswitch": bool(bits & 2),
                 "power_mode": bool(bits & 4), "interlock": bool(bits & 8)}
 
@@ -508,7 +515,7 @@ def device(connection: Connection, model: str, **addressing) -> Device:
     elif "QUAD_SET_PARAMS" in commands:
         cls = QuadDetector
     elif "LA_SET_PARAMS" in commands:
-        cls = LaserSource if model.upper() in ("KLS635", "KLS1550") else Laser
+        cls = LaserSource if model.upper() in ("KLS635", "KLS1550", "KLS101") else Laser
     elif "PZ_REQ_NTTIAREADING" in commands:
         cls = NanoTrak
     elif "MOT_SET_SOL_STATE" in commands:
